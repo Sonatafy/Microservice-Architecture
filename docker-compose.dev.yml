@@ -1,0 +1,71 @@
+version: '3.8'
+
+# Development environment specific settings that override the base docker-compose.yml
+
+services:
+  # Development-specific environment variables for PostgreSQL
+  postgres:
+    environment:
+      - POSTGRES_DB=microservice_dev
+
+  # Development-specific database setup
+  db-setup:
+    environment:
+      - NODE_ENV=development
+      - DB_NAME=microservice_dev
+    command: >
+      sh -c "
+        echo 'Running database migrations for development...' &&
+        npx sequelize-cli db:migrate &&
+        echo 'Migrations completed successfully!'
+      "
+
+  # Development-specific API service settings
+  api-service:
+    environment:
+      - NODE_ENV=development
+      - DB_NAME=microservice_dev
+    command: npx nodemon src/index.js
+    # More verbose logging for development
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Development-specific worker service settings
+  worker-service:
+    environment:
+      - NODE_ENV=development
+      - DB_NAME=microservice_dev
+    command: npx nodemon src/services/workerService.js
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Development-specific frontend settings
+  frontend:
+    environment:
+      - NODE_ENV=development
+    command: npm run serve
+    # Enable hot reloading for frontend development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+  # Development-specific queue monitor settings
+  queue-monitor:
+    environment:
+      - NODE_ENV=development
+      - DB_NAME=microservice_dev
+
+# Define development-specific volume names to separate from production data
+volumes:
+  rabbitmq_data:
+    name: microservice_rabbitmq_data_dev
+  postgres_data:
+    name: microservice_postgres_data_dev
+  redis_data:
+    name: microservice_redis_data_dev

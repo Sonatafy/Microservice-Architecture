@@ -1,0 +1,35 @@
+{
+  "name": "",
+  "version": "1.0.0",
+  "description": "Event-driven microservice architecture template",
+  "private": true,
+  "scripts": {
+    "start": "docker-compose up",
+    "stop": "docker-compose down",
+    "dev": "docker-compose up -d",
+    "logs": "docker-compose logs -f",
+    "clean": "npm run clean:backend && npm run clean:frontend",
+    "clean:backend": "cd backend && rm -rf node_modules",
+    "clean:frontend": "cd frontend && rm -rf node_modules",
+    "prepare": "husky install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "lint-staged": {
+    "backend/**/*.js": [
+      "cd backend && npm run lint:fix"
+    ],
+    "frontend/**/*.{js,vue}": [
+      "cd frontend && npm run lint:fix"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "uuid": "^11.1.0"
+  }
+}
