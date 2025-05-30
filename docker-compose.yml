@@ -1,11 +1,19 @@
 version: '3.8'
 
+# Define a dedicated network upfront
+networks:
+  loadsure-network:
+    name: microservice-network
+    driver: bridge
+
 services:
   rabbitmq:
     image: rabbitmq:3.12-management
+    networks:
+      - loadsure-network
+        # Only expose management UI for development, optionally 
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "15672:15672"  # Management UI can be helpful during development
     environment:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
@@ -23,8 +31,9 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    networks:
+      - loadsure-network
+    # No exposed ports for internal services
     volumes:
       - redis_data:/data
     healthcheck:
@@ -40,8 +49,9 @@ services:
 
   postgres:
     image: postgres:14-alpine
-    ports:
-      - "5432:5432"
+    networks:
+      - loadsure-network
+    # No exposed ports by default - only expose in development if needed
     environment:
       - POSTGRES_USER=${DB_USERNAME}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -65,6 +75,8 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - node:18-alpine
+    networks:
+      - loadsure-network
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DB_DIALECT=${DB_DIALECT:-postgres}
@@ -92,8 +104,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    networks:
+      - loadsure-network
     expose:
-      - "3000"
+      - "3000"  # Only expose within network
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=3000
@@ -137,8 +151,11 @@ services:
 
   nginx:
     image: nginx:alpine
+    networks:
+      - loadsure-network
+    # Only expose nginx, which provides the API gateway
     ports:
-      - "3000:80"  # Expose NGINX on port 3000
+      - "${API_PORT:-3001}:80"  # Expose NGINX on configurable port
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
@@ -153,6 +170,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    networks:
+      - loadsure-network
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - RABBITMQ_URL=${RABBITMQ_URL}
@@ -192,6 +211,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    networks:
+      - loadsure-network
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - RABBITMQ_URL=${RABBITMQ_URL}
@@ -217,8 +238,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    networks:
+      - loadsure-network
     ports:
-      - "8080:8080"
+      - "${FRONTEND_PORT:-8081}:8080"  # Expose frontend on configurable port
     volumes:
       - ./frontend:/app
       - /app/node_modules

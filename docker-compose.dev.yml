@@ -1,12 +1,17 @@
 version: '3.8'
 
-# Development environment specific settings that override the base docker-compose.yml
+# Development specific overrides
+networks:
+  loadsure-network:
+    name: loadsure-network-dev
 
 services:
   # Development-specific environment variables for PostgreSQL
   postgres:
     environment:
       - POSTGRES_DB=microservice_dev
+    ports:
+      - "${DEV_DB_PORT:-5433}:5432"
 
   # Development-specific database setup
   db-setup:
@@ -60,6 +65,24 @@ services:
     environment:
       - NODE_ENV=development
       - DB_NAME=microservice_dev
+
+  # Development-specific nginx settings
+  nginx:
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      # Add development-specific logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Development-specific RabbitMQ settings  
+  rabbitmq:
+    # Also expose AMQP port for development tools
+    ports:
+      - "${DEV_RABBITMQ_PORT:-5673}:5672"
+      - "${DEV_RABBITMQ_MGMT_PORT:-15673}:15672"
 
 # Define development-specific volume names to separate from production data
 volumes:

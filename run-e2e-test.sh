@@ -5,6 +5,7 @@
 set -e  # Exit on error
 
 # Configuration
+API_PORT=${API_PORT:-3000}
 API_URL=${API_URL:-"http://localhost:3000/api"}
 MAX_RETRIES=30
 RETRY_INTERVAL=5

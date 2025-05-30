@@ -4,6 +4,8 @@
 # Default environment variables
 ENV ?= dev
 NODE_ENV ?= development
+API_PORT ?= 3001
+FRONTEND_PORT ?= 8081
 
 # Set compose files based on environment
 ifeq ($(ENV),dev)
