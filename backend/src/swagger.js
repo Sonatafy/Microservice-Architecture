@@ -21,6 +21,10 @@ const options = {
       },
       {
         url: 'http://localhost:3000/api',
+        description: 'Development server via nginx'
+      },
+      {
+        url: 'http://localhost:3001/api',
         description: 'Development server (direct)'
       }
     ],
@@ -143,6 +147,19 @@ const options = {
             instanceId: {
               type: 'string',
               example: 'api-service-1'
+            },
+            services: {
+              type: 'object',
+              properties: {
+                redis: {
+                  type: 'string',
+                  enum: ['connected', 'disconnected', 'error']
+                },
+                rabbitmq: {
+                  type: 'string',
+                  enum: ['connected', 'disconnected', 'error']
+                }
+              }
             }
           }
         },

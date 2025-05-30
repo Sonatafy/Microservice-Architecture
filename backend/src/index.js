@@ -5,9 +5,20 @@ import * as amqp from 'amqplib';
 import Redis from 'ioredis';
 import config from './config.js';
 import { setupSwagger } from './swagger.js';
+import tasksController from './controllers/tasksController.js';
+import createRateLimiter from './middleware/rateLimiter.js';
+import { initializeDatabase } from '../database/index.js';
 
 // Create Express app
 const app = express();
+
+// Apply rate limiting middleware
+const rateLimiter = createRateLimiter({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10)
+});
+app.use(rateLimiter);
+
 app.use(cors({
   origin: [
     'http://localhost:3000',    // nginx proxy
@@ -74,12 +85,15 @@ async function setupRabbitMQ() {
   }
 }
 
+// Mount the tasks controller at /api/tasks
+app.use('/api/tasks', tasksController);
+
 /**
  * @swagger
  * /api/tasks:
  *   post:
- *     summary: Create a new task
- *     description: Creates a new task and queues it for processing
+ *     summary: Create a new task (Redis-based)
+ *     description: Creates a new task and queues it for processing using Redis storage
  *     tags: [Tasks]
  *     requestBody:
  *       required: true
@@ -107,7 +121,7 @@ async function setupRabbitMQ() {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-app.post('/api/tasks', async (req, res) => {
+app.post('/api/tasks-redis', async (req, res) => {
   try {
     const taskId = uuidv4();
     const task = {
@@ -145,10 +159,10 @@ app.post('/api/tasks', async (req, res) => {
 
 /**
  * @swagger
- * /api/tasks/{id}:
+ * /api/tasks-redis/{id}:
  *   get:
- *     summary: Get task by ID
- *     description: Retrieves details for a specific task
+ *     summary: Get task by ID (Redis-based)
+ *     description: Retrieves details for a specific task from Redis
  *     tags: [Tasks]
  *     parameters:
  *       - in: path
@@ -183,7 +197,7 @@ app.post('/api/tasks', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-app.get('/api/tasks/:id', async (req, res) => {
+app.get('/api/tasks-redis/:id', async (req, res) => {
   try {
     const taskId = req.params.id;
     const taskJson = await redis.get(`task:${taskId}`);
@@ -281,15 +295,50 @@ app.get('/', (req, res) => {
     docs: '/api-docs',
     endpoints: {
       tasks: '/api/tasks',
+      'tasks-redis': '/api/tasks-redis',
       health: '/health',
       docs: '/api-docs'
     }
   });
 });
 
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    status: 'error',
+    error: 'Endpoint not found',
+    message: `The endpoint ${req.originalUrl} does not exist`,
+    availableEndpoints: [
+      '/api/tasks',
+      '/api/tasks-redis',
+      '/health',
+      '/api-docs'
+    ]
+  });
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+  res.status(500).json({
+    status: 'error',
+    error: 'Internal server error',
+    message: error.message,
+    requestId: req.id
+  });
+});
+
 // Start the server
 async function startServer() {
   try {
+    // Initialize database connection
+    console.log('Initializing database connection...');
+    const dbInitialized = await initializeDatabase();
+    if (!dbInitialized) {
+      console.warn('Database initialization failed, but continuing startup...');
+      console.warn('Database-based endpoints may not work properly');
+    }
+    
     // Connect to RabbitMQ
     await setupRabbitMQ();
     
@@ -299,6 +348,8 @@ async function startServer() {
       console.log(`Instance ID: ${process.env.HOSTNAME || 'unknown'}`);
       console.log(`📚 API Documentation: http://localhost:${config.PORT}/api-docs`);
       console.log(`🏥 Health Check: http://localhost:${config.PORT}/health`);
+      console.log(`📋 Database Tasks: http://localhost:${config.PORT}/api/tasks`);
+      console.log(`💾 Redis Tasks: http://localhost:${config.PORT}/api/tasks-redis`);
     });
   } catch (error) {
     console.error('Failed to start services:', error);

@@ -1,17 +1,30 @@
 // backend/src/controllers/tasksController.js
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { models } from '../../database/index.js';
 
 const router = express.Router();
-const { Task } = models;
+
+// Lazy load the models to avoid initialization issues
+let models;
+async function getModels() {
+  if (!models) {
+    try {
+      const db = await import('../../database/index.js');
+      models = db.models;
+    } catch (error) {
+      console.error('Failed to load database models:', error);
+      throw new Error('Database not available');
+    }
+  }
+  return models;
+}
 
 /**
  * @swagger
- * /tasks:
+ * /api/tasks:
  *   get:
  *     summary: Get a list of all tasks
- *     description: Returns a paginated list of all tasks
+ *     description: Returns a paginated list of all tasks from the database
  *     tags: [Tasks]
  *     parameters:
  *       - in: query
@@ -40,6 +53,8 @@ const { Task } = models;
  */
 router.get('/', async (req, res) => {
   try {
+    const { Task } = await getModels();
+    
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const offset = (page - 1) * limit;
@@ -70,6 +85,15 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching tasks:', error);
+    
+    if (error.message === 'Database not available') {
+      return res.status(503).json({
+        status: 'error',
+        error: 'Database service unavailable',
+        message: 'The database is not accessible at this time'
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       error: 'Failed to fetch tasks',
@@ -80,10 +104,10 @@ router.get('/', async (req, res) => {
 
 /**
  * @swagger
- * /tasks/{id}:
+ * /api/tasks/{id}:
  *   get:
  *     summary: Get task details by ID
- *     description: Retrieves details for a specific task
+ *     description: Retrieves details for a specific task from the database
  *     tags: [Tasks]
  *     parameters:
  *       - in: path
@@ -102,6 +126,8 @@ router.get('/', async (req, res) => {
  */
 router.get('/:id', async (req, res) => {
   try {
+    const { Task } = await getModels();
+    
     const task = await Task.findOne({
       where: { taskId: req.params.id }
     });
@@ -119,6 +145,15 @@ router.get('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error(`Error fetching task ${req.params.id}:`, error);
+    
+    if (error.message === 'Database not available') {
+      return res.status(503).json({
+        status: 'error',
+        error: 'Database service unavailable',
+        message: 'The database is not accessible at this time'
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       error: 'Failed to fetch task',
@@ -129,10 +164,10 @@ router.get('/:id', async (req, res) => {
 
 /**
  * @swagger
- * /tasks:
+ * /api/tasks:
  *   post:
  *     summary: Create a new task
- *     description: Creates a new task with the provided data
+ *     description: Creates a new task with the provided data in the database
  *     tags: [Tasks]
  *     requestBody:
  *       required: true
@@ -164,6 +199,8 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
+    const { Task } = await getModels();
+    
     const { type, data, priority = 0 } = req.body;
 
     if (!type) {
@@ -195,6 +232,15 @@ router.post('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating task:', error);
+    
+    if (error.message === 'Database not available') {
+      return res.status(503).json({
+        status: 'error',
+        error: 'Database service unavailable',
+        message: 'The database is not accessible at this time'
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       error: 'Failed to create task',
@@ -205,7 +251,7 @@ router.post('/', async (req, res) => {
 
 /**
  * @swagger
- * /tasks/{id}:
+ * /api/tasks/{id}:
  *   put:
  *     summary: Update a task
  *     description: Updates an existing task with the provided data
@@ -246,6 +292,8 @@ router.post('/', async (req, res) => {
  */
 router.put('/:id', async (req, res) => {
   try {
+    const { Task } = await getModels();
+    
     const { status, data, result, priority } = req.body;
     
     const task = await Task.findOne({
@@ -275,6 +323,15 @@ router.put('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error(`Error updating task ${req.params.id}:`, error);
+    
+    if (error.message === 'Database not available') {
+      return res.status(503).json({
+        status: 'error',
+        error: 'Database service unavailable',
+        message: 'The database is not accessible at this time'
+      });
+    }
+    
     res.status(500).json({
       status: 'error',
       error: 'Failed to update task',
