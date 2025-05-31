@@ -16,16 +16,12 @@ const options = {
     },
     servers: [
       {
-        url: '/api',
-        description: 'API Server (relative path)'
-      },
-      {
-        url: 'http://localhost:3000/api',
-        description: 'Development server via nginx'
-      },
-      {
-        url: 'http://localhost:3001/api',
+        url: 'http://localhost:3001',
         description: 'Development server (direct)'
+      },
+      {
+        url: 'http://localhost:3000',
+        description: 'Development server via nginx'
       }
     ],
     components: {

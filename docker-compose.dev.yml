@@ -2,8 +2,8 @@ version: '3.8'
 
 # Development specific overrides
 networks:
-  loadsure-network:
-    name: loadsure-network-dev
+  microservice-network:
+    name: microservice-network-dev
 
 services:
   # Development-specific environment variables for PostgreSQL

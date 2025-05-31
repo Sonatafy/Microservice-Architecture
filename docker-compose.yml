@@ -32,7 +32,7 @@ services:
   redis:
     image: redis:7-alpine
     networks:
-      - loadsure-network
+      - microservice-network
     # No exposed ports for internal services
     volumes:
       - redis_data:/data
@@ -50,7 +50,7 @@ services:
   postgres:
     image: postgres:14-alpine
     networks:
-      - loadsure-network
+      - microservice-network
     # No exposed ports by default - only expose in development if needed
     environment:
       - POSTGRES_USER=${DB_USERNAME}
@@ -76,7 +76,7 @@ services:
       cache_from:
         - node:18-alpine
     networks:
-      - loadsure-network
+      - microservice-network
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DB_DIALECT=${DB_DIALECT:-postgres}
@@ -105,7 +105,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     networks:
-      - loadsure-network
+      - microservice-network
     expose:
       - "3000"  # Only expose within network
     environment:
@@ -152,7 +152,7 @@ services:
   nginx:
     image: nginx:alpine
     networks:
-      - loadsure-network
+      - microservice-network
     # Only expose nginx, which provides the API gateway
     ports:
       - "${API_PORT:-3001}:80"  # Expose NGINX on configurable port
@@ -212,7 +212,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     networks:
-      - loadsure-network
+      - microservice-network
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - RABBITMQ_URL=${RABBITMQ_URL}
@@ -239,7 +239,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     networks:
-      - loadsure-network
+      - microservice-network
     ports:
       - "${FRONTEND_PORT:-8081}:8080"  # Expose frontend on configurable port
     volumes:
