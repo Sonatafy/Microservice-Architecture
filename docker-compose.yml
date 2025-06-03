@@ -171,7 +171,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     networks:
-      - loadsure-network
+      - microservice-network
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - RABBITMQ_URL=${RABBITMQ_URL}
