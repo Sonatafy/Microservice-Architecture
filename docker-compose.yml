@@ -10,7 +10,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.12-management
     networks:
-      - loadsure-network
+      - microservice-network
         # Only expose management UI for development, optionally 
     ports:
       - "15672:15672"  # Management UI can be helpful during development
